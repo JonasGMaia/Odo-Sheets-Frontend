@@ -65,7 +65,7 @@
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'accommodations' },
-          (payload) => {
+          (payload: any) => {
             console.log('Mensagem do Realtime recebida!', payload);
 
             // Se for um INSERT (Seu amigo adicionou um link)
