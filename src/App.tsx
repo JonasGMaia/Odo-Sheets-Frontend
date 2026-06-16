@@ -106,12 +106,23 @@
     };
 
     const handleAddLink = async () => {
-      if (!urlInput.trim() || !currentEventId) return;
-      const { error } = await supabase.from('accommodations').insert([{ url: urlInput, event_id: currentEventId }]);
-      if (error) alert("Erro ao salvar hospedagem.");
-      else setUrlInput(''); 
-      // Repare que NÃO damos mais um push no state aqui. Deixamos o Realtime (useEffect) fazer isso sozinho!
-    };
+    if (!urlInput.trim() || !currentEventId) return;
+
+    // 1. Salva no banco (como já era)
+    const { error } = await supabase.from('accommodations').insert([{ url: urlInput, event_id: currentEventId }]);
+    
+    if (error) {
+      alert("Erro ao salvar hospedagem.");
+      return;
+    }
+    
+    setUrlInput(''); 
+    
+    // 2. Acorda o robô na mesma hora, rodando de fundo!
+    fetch('/api/trigger')
+      .then(res => console.log('Sinal enviado para o robô!'))
+      .catch(err => console.error('Erro ao acionar robô:', err));
+  };
 
     const handleDeleteLink = async (id: string) => {
       if (!window.confirm("Excluir hospedagem?")) return;
