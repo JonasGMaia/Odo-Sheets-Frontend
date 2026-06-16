@@ -1,0 +1,66 @@
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.top-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.top-bar input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.top-bar button, .top-bar select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #eee;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+input.editable-cell {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input.editable-cell:focus {
+  outline: 2px solid #007bff;
+  background: white;
+}
