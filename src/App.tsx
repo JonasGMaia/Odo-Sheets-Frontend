@@ -120,7 +120,7 @@
     
     // 2. Acorda o robô na mesma hora, rodando de fundo!
     fetch('/api/trigger')
-      .then(res => console.log('Sinal enviado para o robô!'))
+      .then(() => console.log('Sinal enviado para o robô!'))
       .catch(err => console.error('Erro ao acionar robô:', err));
   };
 
