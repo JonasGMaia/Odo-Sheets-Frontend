@@ -9,7 +9,9 @@
         headers: {
             'Accept': 'application/vnd.github.v3+json',
             // 'Bearer' é o padrão atual da web, o GitHub aceita ambos (token/Bearer)
-            'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` 
+            'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` ,
+            'X-GitHub-Api-Version': '2022-11-28',
+            'User-Agent': 'Odo-Sheets-App'
         },
         body: JSON.stringify({ ref: 'main' })
         });
