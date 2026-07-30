@@ -3,6 +3,7 @@ import {
   detectParking,
   extractFirstNumber,
   parsePrice,
+  extractPriceFromDomAdvanced,
 } from './utils.js';
 
 async function extractLikelyAmenitySections(page) {
@@ -30,6 +31,20 @@ async function extractLikelyAmenitySections(page) {
   return [...texts];
 }
 
+async function extractPriceFromGenericPage(page) {
+  const pageText = await page.locator('main, body').first().innerText({ timeout: 5000 }).catch(() => '');
+  
+  // First try advanced strikethrough detection
+  const advancedPrice = await extractPriceFromDomAdvanced(page, []);
+  if (advancedPrice !== null) {
+    return advancedPrice;
+  }
+
+  // Fallback to regex matching on page text
+  const priceMatch = pageText.match(/(?:R\$|\$)\s*[\d.,\s]+/);
+  return priceMatch ? parsePrice(priceMatch[0]) : null;
+}
+
 export async function scrapeGeneric(page) {
   await page.waitForSelector('h1', { timeout: 15000 }).catch(() => {});
 
@@ -38,12 +53,11 @@ export async function scrapeGeneric(page) {
   const pageText = await page.locator('main, body').first().innerText({ timeout: 5000 }).catch(() => '');
   const amenityFlags = buildAmenityFlags(amenityTexts.length ? amenityTexts : [pageText.slice(0, 8000)]);
 
-  const priceMatch = pageText.match(/(?:R\$|\$)\s*[\d.,\s]+/);
   const countsText = `${overviewText}\n${pageText.slice(0, 3000)}`;
 
   return {
     title: overviewText || 'Título não encontrado',
-    price: priceMatch ? parsePrice(priceMatch[0]) : null,
+    price: await extractPriceFromGenericPage(page),
     bedrooms: extractFirstNumber(countsText, [/(\d+)\s*(?:quartos?|bedrooms?|bedroom)\b/i]),
     beds: extractFirstNumber(countsText, [/(\d+)\s*(?:camas?|beds?|bed)\b/i]),
     bathrooms: extractFirstNumber(countsText, [/(\d+(?:[.,]\d+)?)\s*(?:banheiros?|bathrooms?|bathroom)\b/i]),
