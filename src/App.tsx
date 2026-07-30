@@ -176,7 +176,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Planejador de Viagens</h1>
+      <h1>ODO - Planejador de Viagens</h1>
 
       <div className="trip-management">
         <label style={{ marginRight: '10px', fontWeight: 'bold' }}>Selecionar Viagem:</label>
