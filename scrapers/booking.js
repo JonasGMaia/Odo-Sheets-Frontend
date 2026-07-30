@@ -3,6 +3,7 @@ import {
   detectParking,
   extractFirstNumber,
   parsePrice,
+  extractPriceFromDomAdvanced,
 } from './utils.js';
 
 async function dismissCookieBanner(page) {
@@ -77,6 +78,13 @@ async function extractPriceFromDom(page) {
     '[data-component="hotel/new-rooms-table/price"]',
   ];
 
+  // First try advanced strikethrough detection
+  const advancedPrice = await extractPriceFromDomAdvanced(page, selectors);
+  if (advancedPrice !== null) {
+    return advancedPrice;
+  }
+
+  // Fallback to original selector-based approach
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
     if (!(await locator.count())) continue;
