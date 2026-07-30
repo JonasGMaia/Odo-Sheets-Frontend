@@ -11,9 +11,10 @@
   --border: rgba(60,40,13,0.08);
   --accent: var(--gold);
   --accent-bg: rgba(154,123,79,0.10);    /* subtle gold bg */
+  --accent-bg-strong: rgba(154,123,79,0.14);
   --accent-border: rgba(154,123,79,0.20);
   --shadow: 0 6px 18px rgba(60,40,13,0.08);
-  --radius: 8px;
+  --radius: 10px;
   --focus-ring: 3px;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
@@ -39,9 +40,23 @@ body{
   margin:0 auto;
   background:var(--surface);
   padding:20px;
-  border-radius:12px;
+  border-radius:14px;
   box-shadow:var(--shadow);
   border:1px solid rgba(60,40,13,0.04);
+}
+
+/* Links: remove blue highlight and underline */
+a, a:visited {
+  color: var(--brown);
+  text-decoration: none;
+}
+a:hover, a:active {
+  color: color-mix(in srgb, var(--brown) 85%, var(--accent) 15%);
+}
+a:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring) rgba(154,123,79,0.14);
+  border-radius:6px;
 }
 
 /* Top bar */
@@ -52,17 +67,17 @@ body{
 }
 .top-bar input{
   flex:1;
-  padding:10px;
+  padding:12px 14px;
   border:1px solid var(--border);
-  border-radius:8px;
+  border-radius:var(--radius);
   background:transparent;
   color:var(--text);
 }
 .top-bar button,
 .top-bar select{
-  padding:10px;
+  padding:10px 14px;
   border:1px solid var(--border);
-  border-radius:8px;
+  border-radius:var(--radius);
   background:linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 85%, black 15%));
   color:white;
   cursor:pointer;
@@ -70,27 +85,65 @@ body{
   box-shadow: 0 6px 14px rgba(154,123,79,0.12);
   transition:transform .08s ease;
 }
+.top-bar .btn{padding:10px 16px}
 .top-bar button:hover{ transform: translateY(-1px); }
 
-/* Table */
-table{
+/* Trip management inputs (make select and new-event input same width) */
+.trip-management{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:20px;
+  padding-bottom:15px;
+  border-bottom:1px solid rgba(60,40,13,0.04);
+  flex-wrap:wrap;
+}
+.trip-management label{font-weight:700;margin-right:6px}
+.trip-management select,
+.trip-management input.trip-input{
+  width:220px;
+  padding:10px 12px;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+}
+.trip-management .trip-or{margin:0 8px;color:var(--muted)}
+
+/* Table area with colored background */
+.table-area{
+  background: linear-gradient(180deg, rgba(154,123,79,0.06), rgba(154,123,79,0.04));
+  padding:14px;
+  border-radius:12px;
+  margin-top:8px;
+  overflow-x:auto;
+}
+.table-area table{
   width:100%;
   border-collapse:collapse;
-  margin-top:10px;
   background:transparent;
+  min-width:900px; /* keep layout */
 }
-th, td{
+.table-area th,
+.table-area td{
   border:1px solid rgba(60,40,13,0.04);
   padding:12px;
   text-align:left;
+  color:var(--text);
+  background:transparent;
 }
-th{
-  background: linear-gradient(180deg, rgba(60,40,13,0.02), rgba(60,40,13,0.01));
+.table-area th{
+  background:transparent;
   color:var(--brown);
   font-weight:700;
 }
 
 /* Editable cells */
+input.editable-cell,
+select,
+textarea{ /* rounded corners for every input area */
+  border-radius:var(--radius);
+}
 input.editable-cell{
   width:100%;
   border:none;
@@ -98,6 +151,7 @@ input.editable-cell{
   font-family:inherit;
   font-size:inherit;
   color:var(--text);
+  padding:6px 8px;
 }
 input.editable-cell:focus{
   outline:2px solid var(--accent);
@@ -167,4 +221,10 @@ input.editable-cell:focus{
 @media (max-width:720px){
   .app-container{ padding:16px; }
   .top-bar{ flex-direction:column; gap:8px; }
+  .top-bar input{ width:100%; }
+  .top-bar .btn{ width:100%; }
+  .trip-management{ flex-direction:column; align-items:flex-start; }
+  .trip-management select, .trip-management input.trip-input{ width:100%; }
+  .table-area{ padding:10px; }
+  .table-area table{ font-size:14px; min-width:0; }
 }
