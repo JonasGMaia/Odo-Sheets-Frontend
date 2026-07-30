@@ -3,6 +3,7 @@ import {
   detectParking,
   extractFirstNumber,
   parsePrice,
+  extractPriceFromDomAdvanced,
 } from './utils.js';
 
 const OVERVIEW_PATTERNS = {
@@ -209,6 +210,13 @@ async function extractPriceFromDom(page) {
     '[data-section-id="BOOK_IT_SIDEBAR"]',
   ];
 
+  // First try advanced strikethrough detection
+  const advancedPrice = await extractPriceFromDomAdvanced(page, selectors);
+  if (advancedPrice !== null) {
+    return advancedPrice;
+  }
+
+  // Fallback to original selector-based approach
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
     if (!(await locator.count())) continue;
