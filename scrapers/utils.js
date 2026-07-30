@@ -25,6 +25,153 @@ export function parsePrice(raw) {
   return Number.isFinite(fallback) ? fallback : null;
 }
 
+/**
+ * Detects strikethrough prices in the DOM and returns the actual (non-struck) price.
+ * Prefers prices that are near struck-through prices (indicating a discount pattern).
+ * @param {Page} page - Playwright page object
+ * @returns {Promise<number|null>} The actual price, or null if not found
+ */
+export async function findActualPriceWithStrikethrough(page) {
+  try {
+    const result = await page.evaluate(() => {
+      const pricePattern = /(?:R\$|\$|€|£)\s*[\d.,\s]+/;
+      const allPrices = [];
+
+      // Helper to check if an element has strikethrough styling
+      const hasStrikethrough = (el) => {
+        const computed = window.getComputedStyle(el);
+        const textDecoration = computed.textDecoration || '';
+        const textDecorationLine = computed.textDecorationLine || '';
+        const hasStrike =
+          textDecoration.includes('line-through') ||
+          textDecorationLine.includes('line-through');
+
+        // Also check for s, del, strike tags
+        return (
+          hasStrike ||
+          el.tagName === 'S' ||
+          el.tagName === 'DEL' ||
+          el.tagName === 'STRIKE'
+        );
+      };
+
+      // Helper to find if price is inside a strikethrough parent
+      const isInStrikethroughParent = (el) => {
+        let parent = el.parentElement;
+        let depth = 0;
+        while (parent && depth < 5) {
+          if (hasStrikethrough(parent)) return true;
+          parent = parent.parentElement;
+          depth++;
+        }
+        return false;
+      };
+
+      // 1. Find text nodes containing prices
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+
+      let node;
+      while (node = walker.nextNode()) {
+        if (pricePattern.test(node.textContent)) {
+          const parent = node.parentElement;
+          const priceText = node.textContent.trim();
+          const isStrike = hasStrikethrough(parent) || isInStrikethroughParent(parent);
+
+          allPrices.push({
+            text: priceText,
+            isStrikethrough: isStrike,
+            element: parent,
+            distance: 0, // Will be calculated below
+          });
+        }
+      }
+
+      if (allPrices.length === 0) return null;
+
+      // 2. Calculate proximity bonus: prices near struck prices are more likely actual prices
+      const strikeIndices = allPrices
+        .map((p, i) => p.isStrikethrough ? i : -1)
+        .filter(i => i !== -1);
+
+      allPrices.forEach((price, idx) => {
+        // Find closest strikethrough price
+        if (strikeIndices.length > 0) {
+          const minDistance = Math.min(
+            ...strikeIndices.map(strikeIdx => Math.abs(strikeIdx - idx))
+          );
+          price.distance = minDistance;
+        }
+      });
+
+      // 3. Filter and score:
+      // Priority 1: Non-struck prices near struck prices (score: high)
+      // Priority 2: Non-struck prices anywhere (score: medium)
+      // Priority 3: First struck price if no others (fallback)
+
+      let candidates = allPrices.filter(p => !p.isStrikethrough);
+
+      if (candidates.length === 0) {
+        // Fallback: return first struck price (better than nothing)
+        candidates = allPrices;
+      }
+
+      // Sort by: distance to strikethrough (ascending), then by position in DOM
+      candidates.sort((a, b) => {
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance; // Closer to strikethrough first
+        }
+        return 0; // Keep DOM order for same distance
+      });
+
+      return candidates[0]?.text || null;
+    });
+
+    if (!result) return null;
+    return parsePrice(result);
+  } catch (error) {
+    console.error('Error finding actual price with strikethrough:', error);
+    return null;
+  }
+}
+
+/**
+ * Extracts all prices from the page and returns the most likely actual price.
+ * Combines strikethrough detection with fallback strategies.
+ * @param {Page} page - Playwright page object
+ * @param {string[]} selectors - Optional specific selectors to check
+ * @returns {Promise<number|null>} The actual price
+ */
+export async function extractPriceFromDomAdvanced(page, selectors = []) {
+  // First try strikethrough detection
+  const strikethroughPrice = await findActualPriceWithStrikethrough(page);
+  if (strikethroughPrice !== null) {
+    return strikethroughPrice;
+  }
+
+  // Fallback to simple selector search if provided
+  if (selectors.length > 0) {
+    for (const selector of selectors) {
+      try {
+        const locator = page.locator(selector).first();
+        if (await locator.count()) {
+          const text = await locator.innerText({ timeout: 2000 }).catch(() => '');
+          const price = parsePrice(text);
+          if (price !== null) return price;
+        }
+      } catch (error) {
+        // Continue to next selector
+      }
+    }
+  }
+
+  return null;
+}
+
 export function extractFirstNumber(text, patterns) {
   if (!text) return null;
   for (const pattern of patterns) {
