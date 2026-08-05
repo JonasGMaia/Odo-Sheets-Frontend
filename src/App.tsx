@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import './index.css';
+import DeleteTableModal from './components/DeleteTableModal';
+import Toast from './components/Toast';
 
 // --- TIPAGENS ---
 interface TripEvent {
@@ -41,6 +43,10 @@ function App() {
   const [filters, setFilters] = useState<Record<string, boolean | null>>({
     wifi: null, tv: null, air_conditioning: null, kitchen: null, petfriendly: null
   });
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [targetEvent, setTargetEvent] = useState<{ id: string; name: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // --- 1. BUSCA INICIAL ---
   useEffect(() => {
@@ -102,6 +108,38 @@ function App() {
       setEvents([...events, data[0]]);
       setCurrentEventId(data[0].id);
       setNewEventName('');
+    }
+  };
+
+  const openDeleteEventModal = (eventId: string) => {
+    const ev = events.find(e => e.id === eventId);
+    if (!ev) return;
+    setTargetEvent({ id: ev.id, name: ev.name });
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!targetEvent) return;
+    setDeleteLoading(true);
+    try {
+      // First remove related accommodations (cascade-like behavior)
+      await supabase.from('accommodations').delete().eq('event_id', targetEvent.id);
+      // Then remove the event itself
+      await supabase.from('events').delete().eq('id', targetEvent.id);
+
+      setEvents(prev => prev.filter(e => e.id !== targetEvent.id));
+      if (currentEventId === targetEvent.id) {
+        const remaining = events.filter(e => e.id !== targetEvent.id);
+        setCurrentEventId(remaining.length > 0 ? remaining[0].id : '');
+      }
+      setIsDeleteModalOpen(false);
+      setTargetEvent(null);
+      setToast({ message: `Tabela "${targetEvent.name}" excluída com sucesso.`, type: 'success' });
+    } catch (err) {
+      console.error('Erro ao deletar tabela:', err);
+      setToast({ message: 'Erro ao deletar tabela. Veja o console para detalhes.', type: 'error' });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -183,10 +221,14 @@ function App() {
         <select value={currentEventId} onChange={(e) => setCurrentEventId(e.target.value)}>
           {events.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
         </select>
+        <button style={{ marginLeft: 8 }} className="btn-ghost" title="Excluir tabela selecionada" onClick={() => { if (!currentEventId) return; openDeleteEventModal(currentEventId); }}>🗑️</button>
         <span className="trip-or">ou</span>
         <input className="trip-input" type="text" placeholder="Nome da nova tabela" value={newEventName} onChange={(e) => setNewEventName(e.target.value)} />
         <button className="btn btn-ghost" onClick={handleCreateEvent}>Criar Nova Tabela</button>
       </div>
+
+      <DeleteTableModal open={isDeleteModalOpen} tableName={targetEvent?.name} loading={deleteLoading} onCancel={() => { setIsDeleteModalOpen(false); setTargetEvent(null); }} onConfirm={confirmDeleteEvent} />
+      <Toast message={toast?.message} type={toast?.type} onClose={() => setToast(null)} />
 
       <div className="top-bar">
         <input type="text" placeholder="Cole o link da hospedagem..." value={urlInput} onChange={(e) => setUrlInput(e.target.value)} />

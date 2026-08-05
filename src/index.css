@@ -228,3 +228,9 @@ input.editable-cell:focus{
   .table-area{ padding:10px; }
   .table-area table{ font-size:14px; min-width:0; }
 }
+
+/* Toast notifications */
+.toast-container{ position: fixed; right: 16px; bottom: 16px; z-index: 99999; }
+.toast{ background: var(--surface); padding: 10px 14px; border-radius: 10px; box-shadow: var(--shadow); border:1px solid var(--border); min-width:200px; font-weight:700; }
+.toast-success{ color: #16a34a; }
+.toast-error{ color: #dc2626; }
